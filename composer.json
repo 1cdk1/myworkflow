@@ -1,20 +1,20 @@
 {
-    "name": "myworkflow/main",
-    "description": "the work flow for dev",
-    "type": "library",
-    "require": {
-        "php": ">=7.2"
-    },
-    "autoload": {
-        "psr-4": {
-            "Myworkflow\\Main\\": "src/"
-        }
-    },
-    "authors": [
-        {
-            "name": "cdk123",
-            "email": "652769507@qq.com"
-        }
-    ],
-    "minimum-stability": "dev"
+  "name": "myworkflow/main",
+  "description": "工作流SDK",
+  "type": "library",
+  "require": {
+    "php": ">=7.4"
+  },
+  "autoload": {
+    "psr-4": {
+      "Myworkflow\\": "src/"
+    }
+  },
+  "authors": [
+    {
+      "name": "cdk123",
+      "email": "652769507@qq.com"
+    }
+  ],
+  "minimum-stability": "dev"
 }
