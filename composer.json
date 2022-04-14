@@ -16,5 +16,6 @@
       "email": "652769507@qq.com"
     }
   ],
-  "minimum-stability": "dev"
+  "minimum-stability": "dev",
+  "license": "MIT"
 }
