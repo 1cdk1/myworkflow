@@ -40,57 +40,7 @@ class BaseClient
             #工作流程
             'flow_process'  => [
                 [
-                    'process_id'       => 1,                 #步骤ID
-                    'process_name'     => '生成报价单',        #步骤名
-                    'process_desc'     => '创建一个报价单，并且自己审核',        #步骤描述
-                    'process_type'     => 0,                 #步骤类型  0为开始 1为步骤 2为结束
-                    'next_process_ids' => '2,3',                 #下一步骤IDS
-                    'role_ids'         => 1,                 #审核角色IDS
-                    'can_back'         => 0,                 #是否可驳回 0否 1是
-                    'sign_type'        => 0,                 #签名模式 0无 1会签 2或签
-                ],
-                [
-                    'process_id'       => 2,                 #步骤ID
-                    'process_name'     => '审核项目',        #步骤名
-                    'process_desc'     => '审核报价单项目是否无误',        #步骤描述
-                    'process_type'     => 1,                 #步骤类型  0为开始 1为步骤 2为结束
-                    'next_process_ids' => 5,                 #下一步骤IDS
-                    'role_ids'         => 2,                 #审核角色IDS
-                    'can_back'         => 1,                 #是否可驳回 0否 1是
-                    'sign_type'        => 0,                 #签名模式 0无 1会签 2或签
-                ],
-                [
-                    'process_id'       => 3,                 #步骤ID
-                    'process_name'     => '金额审核',        #步骤名
-                    'process_desc'     => '审核报价单金额是否无误',        #步骤描述
-                    'process_type'     => 1,                 #步骤类型  0为开始 1为步骤 2为结束
-                    'next_process_ids' => 4,                 #下一步骤IDS
-                    'role_ids'         => 4,                 #审核角色IDS
-                    'can_back'         => 1,                 #是否可驳回 0否 1是
-                    'sign_type'        => 0,                 #签名模式 0无 1会签 2或签
-                ],
-                [
-                    'process_id'       => 4,                 #步骤ID
-                    'process_name'     => '金额终审',        #步骤名
-                    'process_desc'     => '审核报价单金额是否无误',        #步骤描述
-                    'process_type'     => 1,                 #步骤类型  0为开始 1为步骤 2为结束
-                    'next_process_ids' => 5,                 #下一步骤IDS
-                    'role_ids'         => 1,                 #审核角色IDS
-                    'can_back'         => 1,                 #是否可驳回 0否 1是
-                    'sign_type'        => 1,                 #签名模式 0无 1会签 2或签
-                ],
-                [
-                    'process_id'       => 5,                 #步骤ID
-                    'process_name'     => '施工审核',        #步骤名
-                    'process_desc'     => '处理施工，并反馈结果',        #步骤描述
-                    'process_type'     => 1,                 #步骤类型  0为开始 1为步骤 2为结束
-                    'next_process_ids' => 6,                 #下一步骤IDS
-                    'role_ids'         => 3,                 #审核角色IDS
-                    'can_back'         => 0,                 #是否可驳回 0否 1是
-                    'sign_type'        => 0,                 #签名模式 0无 1会签 2或签
-                ],
-                [
-                    'process_id'       => 6,                 #步骤ID
+                    'process_id'       => 16,                 #步骤ID
                     'process_name'     => '结束',        #步骤名
                     'process_desc'     => '完整流程',        #步骤描述
                     'process_type'     => 2,                 #步骤类型  0为开始 1为步骤 2为结束
@@ -98,6 +48,56 @@ class BaseClient
                     'role_ids'         => 0,                 #审核角色IDS
                     'can_back'         => 0,                 #是否可驳回 0否 1是
                     'sign_type'        => 0,                 #签名模式 0无 1会签 2或签
+                ],
+                [
+                    'process_id'       => 23,                 #步骤ID
+                    'process_name'     => '金额审核',        #步骤名
+                    'process_desc'     => '审核报价单金额是否无误',        #步骤描述
+                    'process_type'     => 1,                 #步骤类型  0为开始 1为步骤 2为结束
+                    'next_process_ids' => 34,                 #下一步骤IDS
+                    'role_ids'         => 4,                 #审核角色IDS
+                    'can_back'         => 1,                 #是否可驳回 0否 1是
+                    'sign_type'        => 0,                 #签名模式 0无 1会签 2或签
+                ],
+                [
+                    'process_id'       => 21,                 #步骤ID
+                    'process_name'     => '审核项目',        #步骤名
+                    'process_desc'     => '审核报价单项目是否无误',        #步骤描述
+                    'process_type'     => 1,                 #步骤类型  0为开始 1为步骤 2为结束
+                    'next_process_ids' => 25,                 #下一步骤IDS
+                    'role_ids'         => 2,                 #审核角色IDS
+                    'can_back'         => 1,                 #是否可驳回 0否 1是
+                    'sign_type'        => 0,                 #签名模式 0无 1会签 2或签
+                ],
+                [
+                    'process_id'       => 31,                 #步骤ID
+                    'process_name'     => '生成报价单',        #步骤名
+                    'process_desc'     => '创建一个报价单，并且自己审核',        #步骤描述
+                    'process_type'     => 0,                 #步骤类型  0为开始 1为步骤 2为结束
+                    'next_process_ids' => '21,23',                 #下一步骤IDS
+                    'role_ids'         => 1,                 #审核角色IDS
+                    'can_back'         => 0,                 #是否可驳回 0否 1是
+                    'sign_type'        => 0,                 #签名模式 0无 1会签 2或签
+                ],
+                [
+                    'process_id'       => 25,                 #步骤ID
+                    'process_name'     => '施工审核',        #步骤名
+                    'process_desc'     => '处理施工，并反馈结果',        #步骤描述
+                    'process_type'     => 1,                 #步骤类型  0为开始 1为步骤 2为结束
+                    'next_process_ids' => 16,                 #下一步骤IDS
+                    'role_ids'         => 3,                 #审核角色IDS
+                    'can_back'         => 0,                 #是否可驳回 0否 1是
+                    'sign_type'        => 0,                 #签名模式 0无 1会签 2或签
+                ],
+                [
+                    'process_id'       => 34,                 #步骤ID
+                    'process_name'     => '金额终审',        #步骤名
+                    'process_desc'     => '审核报价单金额是否无误',        #步骤描述
+                    'process_type'     => 1,                 #步骤类型  0为开始 1为步骤 2为结束
+                    'next_process_ids' => 25,                 #下一步骤IDS
+                    'role_ids'         => 1,                 #审核角色IDS
+                    'can_back'         => 1,                 #是否可驳回 0否 1是
+                    'sign_type'        => 1,                 #签名模式 0无 1会签 2或签
                 ],
             ]
         ];

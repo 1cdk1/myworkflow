@@ -12,7 +12,8 @@ class FlowCons
     //工作流步骤状态
     const WAIT_PROCESS = 0;
     const PROCESSING = 1;
-    const FINISH = 2;
+    const AGREE = 2;
+    const FINISH = 3;
     const ROLL_BACK = -1;
 
     #步骤类型

@@ -48,7 +48,28 @@ class Client extends BaseClient
             $flowId = $this->db->name(TableName::FLOW)->insertGetId($flowData);
 
             //插入本地工作流流程
-            $nextProcessIds = [];
+            #拿出开始,结束及普通节点
+            $processData = [];
+            array_map(function ($value) use (&$processData) {
+                if ($value['process_type'] == 0) {
+                    $processData['start'] = $value;
+                } elseif ($value['process_type'] == 2) {
+                    $processData['end'] = $value;
+                } else {
+                    $processData['process'][$value['process_id']] = $value;
+                }
+            }, $template['flow_process']);
+            #递归整理所有普通节点，按顺序排列
+            $tmpProcess = $this->_recursionProcess($processData['process'], $processData['start']['next_process_ids']);
+            #进行倒序处理，并添加回结束及开始节点。用于插入数据库
+            $middleProcess = array_values(array_column(array_reverse($tmpProcess), null, 'process_id'));
+            $finalProcess = array_merge([
+                $processData['end']
+            ], $middleProcess);
+            $finalProcess[] = $processData['start'];
+
+            #插入数据
+            $localNextProcessIds = [];
             array_map(function ($value) use ($flowId, &$localNextProcessIds) {
                 #计算出下一步骤的ID
                 #判断是否有多个下一步
@@ -79,7 +100,7 @@ class Client extends BaseClient
                 $nowId = $this->db->name(TableName::PROCESS)->insertGetId($processData);
                 $this->assert((!$nowId), '添加步骤失败');
                 $localNextProcessIds[$value['process_id']] = $nowId;
-            }, array_reverse($template['flow_process']));
+            }, $finalProcess);
 
             $this->assert((!$flowId), '创建失败');
 
@@ -177,5 +198,31 @@ class Client extends BaseClient
     public function getNowProcess($flowId)
     {
 
+    }
+
+    /**
+     * 按流程递归排序步骤
+     *
+     * @param $process
+     * @param $processIds
+     *
+     * @return array
+     */
+    public function _recursionProcess($process, $processIds)
+    {
+        $ids = explode(',', $processIds);
+        $data = [];
+        foreach ($ids as $v) {
+            if (isset($process[$v])) {
+                $data[] = $process[$v];
+                if ($process[$v]['next_process_ids']) {
+                    $tmp = $this->_recursionProcess($process, $process[$v]['next_process_ids']);
+                    if (!empty($tmp)) {
+                        $data = array_merge($data, $tmp);
+                    }
+                }
+            }
+        }
+        return $data;
     }
 }

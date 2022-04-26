@@ -37,20 +37,28 @@ class Operation
                 #当前步骤
                 $nowProcessArr = $db->name(TableName::PROCESS)
                     ->whereIn('process_id', explode(',', $runData['now_process_ids']))
-                    ->column('*','process_id');
+                    ->select()
+                    ->toArray();
                 if (empty($nowProcessArr)) {
                     throw new Exception('当前流水线存在错误,请重新创建');
                 }
                 #判断角色是否可进行操作
-                $processRole = array_column($nowProcessArr, 'role_ids');
+                /*$processRole = array_column($nowProcessArr, 'role_ids', 'process_id');
                 $allowRoleId = implode(',', $processRole);
                 if (!in_array($userInfo['role_id'], explode(',', $allowRoleId))) {
                     throw new Exception('当前角色没有权限操作');
+                }*/
+                #获取传入角色可操作的步骤，如果不存在则为没有操作权限
+                $nowProcess = null;
+                array_map(function ($value) use ($userInfo, &$nowProcess) {
+                    $roleIds = explode(',', $value['role_ids']);
+                    if (in_array($userInfo['role_id'], $roleIds) && $nowProcess === null) {
+                        $nowProcess = $value;
+                    }
+                }, $nowProcessArr);
+                if ($nowProcess === null) {
+                    throw new Exception('当前角色没有权限操作');
                 }
-                #todo 多步骤需判断为哪一步骤
-                dump($processRole);exit;
-
-                $nowProcess = $nowProcessArr[0];
 
                 switch ($name) {
                     case 'ok':#通过
@@ -62,7 +70,7 @@ class Operation
                             'flow_id'    => $flowId,
                             'status'     => FlowCons::PROCESSING,
                         ])->update([
-                            'status'           => FlowCons::FINISH,
+                            'status'           => FlowCons::AGREE,
                             'handle_time'      => time(),
                             'approval_opinion' => $opInfo['approval_opinion']
                         ]);
@@ -142,9 +150,64 @@ class Operation
                         }
                         break;
                     case 'back':#驳回
+                        $db->startTrans();
                         #把当前步骤设为已驳回
+                        $saveProcess = $db->name(TableName::RUN_PROCESS)->where([
+                            'process_id' => $nowProcess['process_id'],
+                            'run_id'     => $runData['run_id'],
+                            'flow_id'    => $flowId,
+                            'status'     => FlowCons::PROCESSING,
+                        ])->update([
+                            'status'           => FlowCons::ROLL_BACK,
+                            'handle_time'      => time(),
+                            'is_back'          => $opInfo['back_process_id'] ? 1 : 0,
+                            'approval_opinion' => $opInfo['approval_opinion']
+                        ]);
+                        #如果有回退ID则回退到对应步骤，无则全部直接结束
+                        if ($opInfo['back_process_id']) {
 
-                        #如果有回退ID则回退到对应步骤
+                        } else {
+                            #全部退回
+                            #所有处理中步骤变为已结束
+                            $saveAllProcess = $db->name(TableName::RUN_PROCESS)->where([
+                                'run_id'  => $runData['run_id'],
+                                'flow_id' => $flowId,
+                                'status'  => FlowCons::PROCESSING,
+                            ])->update([
+                                'status'           => FlowCons::FINISH,
+                                'handle_time'      => time(),
+                                'approval_opinion' => '步骤已被全部打回'
+                            ]);
+                            #更新运行日志
+                            $logRes = $db->name(TableName::RUN_LOG)->insert([
+                                'flow_id'    => $flowId,
+                                'process_id' => $nowProcess['process_id'],
+                                'run_id'     => $runData['run_id'],
+                                'user_id'    => $userInfo['user_id'],
+                                'content'    => '用户ID:' . $userInfo['user_id'] . '驳回了整个流程'
+                            ]);
+                            #变更运行表为已结束
+                            $updateRun = $db->name(TableName::RUN)
+                                ->where([
+                                    'run_id'  => $runData['run_id'],
+                                    'flow_id' => $flowId,
+                                ])
+                                ->update([
+                                    'status'          => FlowCons::END_STATUS,
+                                    'now_process_ids' => '',
+                                    'end_time'        => time(),
+                                    'update_time'     => time(),
+                                ]);
+                        }
+                        if ($saveProcess && $logRes && $saveAllProcess && $updateRun) {
+                            $db->commit();
+                            return [
+                                'status' => ClientReturn::SUCCESS,
+                                'msg'    => '操作成功',
+                            ];
+                        } else {
+                            throw new Exception('操作保存失败');
+                        }
                         break;
                 }
 
