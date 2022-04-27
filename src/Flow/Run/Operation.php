@@ -80,6 +80,7 @@ class Operation
                             'process_id' => $nowProcess['process_id'],
                             'run_id'     => $runData['run_id'],
                             'user_id'    => $userInfo['user_id'],
+                            'create_time' => time(),
                             'content'    => '用户ID:' . $userInfo['user_id'] . '审批通过了' . $nowProcess['process_name'] . '步骤'
                         ]);
                         #获取下一步骤
@@ -180,28 +181,80 @@ class Operation
                         ]);
                         #如果有回退ID则回退到对应步骤，无则全部直接结束
                         if ($opInfo['back_process_id']) {
-                            #todo 暂时只支持回退到上一步
-
-                        } else {
-                            #全部退回
-                            #所有处理中步骤变为已结束
-                            $saveAllProcess = $db->name(TableName::RUN_PROCESS)->where([
-                                'run_id'  => $runData['run_id'],
-                                'flow_id' => $flowId,
-                                'status'  => FlowCons::PROCESSING,
-                            ])->update([
-                                'status'           => FlowCons::FINISH,
-                                'handle_time'      => time(),
-                                'approval_opinion' => '步骤已被全部打回'
-                            ]);
                             #更新运行日志
                             $logRes = $db->name(TableName::RUN_LOG)->insert([
                                 'flow_id'    => $flowId,
                                 'process_id' => $nowProcess['process_id'],
                                 'run_id'     => $runData['run_id'],
                                 'user_id'    => $userInfo['user_id'],
+                                'create_time' => time(),
+                                'content'    => '用户ID:' . $userInfo['user_id'] . '驳回了' . $nowProcess['process_name'] . '步骤'
+                            ]);
+                            #todo 暂时只支持回退到上一步
+                            #找出上一步步骤
+                            $beforeProcess = $db->name(TableName::PROCESS)
+                                ->where('next_process_ids', $nowProcess['process_id'])
+                                ->select()
+                                ->toArray();
+                            if (empty($beforeProcess)) {
+                                throw new Exception('工作流存在异常，未找到上一步骤');
+                            }
+                            $beforeProcessRunData = [];
+                            array_map(function ($value) use (&$beforeProcessRunData, $runData, $flowId) {
+                                $beforeProcessRunData[] = [
+                                    'run_id'       => $runData['run_id'],
+                                    'process_id'   => $value['process_id'],
+                                    'flow_id'      => $flowId,
+                                    'status'       => $value['process_type'] == FlowCons::END_PROCESS ? FlowCons::FINISH
+                                        : FlowCons::RUNNING_STATUS,
+                                    'receive_time' => time(),
+                                    'create_time'  => time(),
+                                ];
+                            }, $beforeProcess);
+                            $insertRunProcess = $db->name(TableName::RUN_PROCESS)->insertAll($beforeProcessRunData);
+                            $nowProcessIds = $db->name(TableName::RUN_PROCESS)
+                                ->where([
+                                    'run_id'  => $runData['run_id'],
+                                    'flow_id' => $flowId,
+                                    'status'  => FlowCons::PROCESSING
+                                ])
+                                ->column('process_id');
+
+                            #是否已经没有在执行的步骤
+                            if (!empty($nowProcessIds)) {
+                                #更新运行表
+                                $updateRun = $db->name(TableName::RUN)
+                                    ->where([
+                                        'run_id'  => $runData['run_id'],
+                                        'flow_id' => $flowId,
+                                    ])
+                                    ->update([
+                                        'now_process_ids' => implode(',', $nowProcessIds),
+                                        'update_time'     => time()
+                                    ]);
+
+                            } else {
+                                throw new Exception('系统异常，请稍后重试');
+                            }
+                        } else {
+                            #全部退回
+                            #更新运行日志
+                            $logRes = $db->name(TableName::RUN_LOG)->insert([
+                                'flow_id'    => $flowId,
+                                'process_id' => $nowProcess['process_id'],
+                                'run_id'     => $runData['run_id'],
+                                'user_id'    => $userInfo['user_id'],
+                                'create_time' => time(),
                                 'content'    => '用户ID:' . $userInfo['user_id'] . '驳回了整个流程'
                             ]);
+                            #所有处理中步骤变为已结束
+                            $saveAllProcess = $db->name(TableName::RUN_PROCESS)
+                                ->where([
+                                    'run_id'  => $runData['run_id'],
+                                    'flow_id' => $flowId,
+                                    'status'  => FlowCons::PROCESSING,
+                                ])
+                                ->select();
                             #变更运行表为已结束
                             $updateRun = $db->name(TableName::RUN)
                                 ->where([
@@ -215,16 +268,16 @@ class Operation
                                     'update_time'     => time(),
                                 ]);
                         }
-                        if ($saveProcess && $logRes && $saveAllProcess && $updateRun) {
+                        if ($saveProcess && $logRes && $updateRun) {
                             $db->commit();
                             return [
                                 'status' => ClientReturn::SUCCESS,
                                 'msg'    => '操作成功',
                             ];
                         } else {
+                            echo $saveProcess . ',' . $logRes . ',' . $saveAllProcess . ',' . $updateRun;
                             throw new Exception('操作保存失败');
                         }
-                        break;
                 }
 
             } catch (Exception $e) {

@@ -164,6 +164,7 @@ class Client extends BaseClient
                 'process_id' => $firstProcess['process_id'],
                 'run_id'     => $runId,
                 'user_id'    => $userId,
+                'create_time' => $this->nowTime,
                 'content'    => '用户ID:' . $userId . '发起了新的名为' . $flowData['flow_name'] . '的工作流',
             ]);
 
