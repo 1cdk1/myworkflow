@@ -82,16 +82,25 @@ class Operation
                             'user_id'    => $userInfo['user_id'],
                             'content'    => '用户ID:' . $userInfo['user_id'] . '审批通过了' . $nowProcess['process_name'] . '步骤'
                         ]);
-                        #当前步骤是否为结束
-                        if ($nowProcess['process_type'] != FlowCons::END_PROCESS) {
-                            #更新下一步骤
-                            $nextProcess = $db->name(TableName::PROCESS)
-                                ->whereIn('process_id', explode(',', $nowProcess['next_process_ids']))
-                                ->select()
-                                ->toArray();
-                            if (empty($nextProcess)) {
-                                throw new Exception('工作流存在异常，未找到下一步骤');
-                            }
+                        #获取下一步骤
+                        $nextProcess = $db->name(TableName::PROCESS)
+                            ->whereIn('process_id', explode(',', $nowProcess['next_process_ids']))
+                            ->select()
+                            ->toArray();
+                        if (empty($nextProcess)) {
+                            throw new Exception('工作流存在异常，未找到下一步骤');
+                        }
+                        #检查下一步骤之前的步骤是否有全部完成，没有则不动作
+                        $beforeProcessIds = $db->name(TableName::PROCESS)
+                            ->whereIn('next_process_ids', array_column($nextProcess, 'process_id'))
+                            ->where('process_id', '<>', $nowProcess['process_id'])
+                            ->column('process_id');
+                        $beforeProcessRun = $db->name(TableName::RUN_PROCESS)
+                            ->whereIn('process_id', $beforeProcessIds)
+                            ->where('status', FlowCons::AGREE)
+                            ->count('process_id');
+                        #如果下一步骤之前的步骤已全部完成,则插入下一步骤
+                        if (count($beforeProcessIds) == $beforeProcessRun) {
                             #组装数据
                             $nextProcessRunData = [];
                             array_map(function ($value) use (&$nextProcessRunData, $runData, $flowId) {
@@ -99,21 +108,28 @@ class Operation
                                     'run_id'       => $runData['run_id'],
                                     'process_id'   => $value['process_id'],
                                     'flow_id'      => $flowId,
-                                    'status'       => FlowCons::RUNNING_STATUS,
+                                    'status'       => $value['process_type'] == FlowCons::END_PROCESS ? FlowCons::FINISH
+                                        : FlowCons::RUNNING_STATUS,
                                     'receive_time' => time(),
                                     'create_time'  => time(),
                                 ];
                             }, $nextProcess);
                             $insertRunProcess = $db->name(TableName::RUN_PROCESS)->insertAll($nextProcessRunData);
-                            #获取当前还在运行的步骤
-                            $nowProcessIds = $db->name(TableName::RUN_PROCESS)
-                                ->where([
-                                    'run_id'  => $runData['run_id'],
-                                    'flow_id' => $flowId,
-                                    'status'  => FlowCons::PROCESSING
-                                ])
-                                ->column('process_id');
+                        } else {
+                            $insertRunProcess = true;
+                        }
 
+                        #获取当前还在运行的步骤
+                        $nowProcessIds = $db->name(TableName::RUN_PROCESS)
+                            ->where([
+                                'run_id'  => $runData['run_id'],
+                                'flow_id' => $flowId,
+                                'status'  => FlowCons::PROCESSING
+                            ])
+                            ->column('process_id');
+
+                        #是否已经没有在执行的步骤
+                        if (!empty($nowProcessIds)) {
                             #更新运行表
                             $updateRun = $db->name(TableName::RUN)
                                 ->where([
@@ -125,7 +141,6 @@ class Operation
                                     'update_time'     => time()
                                 ]);
                         } else {
-                            $insertRunProcess = true;
                             #变更运行表为已结束
                             $updateRun = $db->name(TableName::RUN)
                                 ->where([
@@ -165,6 +180,7 @@ class Operation
                         ]);
                         #如果有回退ID则回退到对应步骤，无则全部直接结束
                         if ($opInfo['back_process_id']) {
+                            #todo 暂时只支持回退到上一步
 
                         } else {
                             #全部退回
