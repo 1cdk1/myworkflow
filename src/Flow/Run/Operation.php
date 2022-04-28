@@ -43,11 +43,6 @@ class Operation
                     throw new Exception('当前流水线存在错误,请重新创建');
                 }
                 #判断角色是否可进行操作
-                /*$processRole = array_column($nowProcessArr, 'role_ids', 'process_id');
-                $allowRoleId = implode(',', $processRole);
-                if (!in_array($userInfo['role_id'], explode(',', $allowRoleId))) {
-                    throw new Exception('当前角色没有权限操作');
-                }*/
                 #获取传入角色可操作的步骤，如果不存在则为没有操作权限
                 $nowProcess = null;
                 array_map(function ($value) use ($userInfo, &$nowProcess) {
@@ -76,12 +71,13 @@ class Operation
                         ]);
                         #更新运行日志
                         $logRes = $db->name(TableName::RUN_LOG)->insert([
-                            'flow_id'    => $flowId,
-                            'process_id' => $nowProcess['process_id'],
-                            'run_id'     => $runData['run_id'],
-                            'user_id'    => $userInfo['user_id'],
+                            'flow_id'     => $flowId,
+                            'process_id'  => $nowProcess['process_id'],
+                            'run_id'      => $runData['run_id'],
+                            'user_id'     => $userInfo['user_id'],
                             'create_time' => time(),
-                            'content'    => '用户ID:' . $userInfo['user_id'] . '审批通过了' . $nowProcess['process_name'] . '步骤'
+                            'content'     => '用户ID:' . $userInfo['user_id'] . '审批通过了' . $nowProcess['process_name'] . '步骤' . ',审核意见:'
+                                . $opInfo['approval_opinion']
                         ]);
                         #获取下一步骤
                         $nextProcess = $db->name(TableName::PROCESS)
@@ -91,6 +87,8 @@ class Operation
                         if (empty($nextProcess)) {
                             throw new Exception('工作流存在异常，未找到下一步骤');
                         }
+                        #todo 检查是否存在未完成会签步骤
+                        #todo 判断当前步骤会签还是或签
                         #检查下一步骤之前的步骤是否有全部完成，没有则不动作
                         $beforeProcessIds = $db->name(TableName::PROCESS)
                             ->whereIn('next_process_ids', array_column($nextProcess, 'process_id'))
@@ -183,35 +181,56 @@ class Operation
                         if ($opInfo['back_process_id']) {
                             #更新运行日志
                             $logRes = $db->name(TableName::RUN_LOG)->insert([
-                                'flow_id'    => $flowId,
-                                'process_id' => $nowProcess['process_id'],
-                                'run_id'     => $runData['run_id'],
-                                'user_id'    => $userInfo['user_id'],
+                                'flow_id'     => $flowId,
+                                'process_id'  => $nowProcess['process_id'],
+                                'run_id'      => $runData['run_id'],
+                                'user_id'     => $userInfo['user_id'],
                                 'create_time' => time(),
-                                'content'    => '用户ID:' . $userInfo['user_id'] . '驳回了' . $nowProcess['process_name'] . '步骤'
+                                'content'     => '用户ID:' . $userInfo['user_id'] . '驳回了' . $nowProcess['process_name'] . '步骤' . ',审核意见:'
+                                    . $opInfo['approval_opinion']
                             ]);
-                            #todo 暂时只支持回退到上一步
-                            #找出上一步步骤
-                            $beforeProcess = $db->name(TableName::PROCESS)
-                                ->where('next_process_ids', $nowProcess['process_id'])
-                                ->select()
-                                ->toArray();
-                            if (empty($beforeProcess)) {
-                                throw new Exception('工作流存在异常，未找到上一步骤');
+                            #找出要回退到的步骤，回退步骤level必须>=当前level-1
+                            $rollbackProcess = $db->name(TableName::PROCESS)
+                                ->where('process_id', $opInfo['back_process_id'])
+                                ->whereBetween('level', implode(',', [$nowProcess['level'] - 1, $nowProcess['level']]))
+                                ->find();
+                            if (empty($rollbackProcess)) {
+                                throw new Exception('未找到可退回步骤');
                             }
-                            $beforeProcessRunData = [];
-                            array_map(function ($value) use (&$beforeProcessRunData, $runData, $flowId) {
-                                $beforeProcessRunData[] = [
-                                    'run_id'       => $runData['run_id'],
-                                    'process_id'   => $value['process_id'],
-                                    'flow_id'      => $flowId,
-                                    'status'       => $value['process_type'] == FlowCons::END_PROCESS ? FlowCons::FINISH
-                                        : FlowCons::RUNNING_STATUS,
-                                    'receive_time' => time(),
-                                    'create_time'  => time(),
-                                ];
-                            }, $beforeProcess);
-                            $insertRunProcess = $db->name(TableName::RUN_PROCESS)->insertAll($beforeProcessRunData);
+                            #判断当前运行的步骤中是否存在level大于要回退到的流程，并且步骤的pid和当前步骤pid相同
+                            $needFinishProcessIds = $db->name(TableName::PROCESS)
+                                ->where([
+                                    ['level', '>', $rollbackProcess['level']],
+                                    ['branch_pid', '=', $nowProcess['branch_pid']],
+                                ])
+                                ->column('process_id');
+                            var_dump($needFinishProcessIds);
+                            $saveAllProcess = $db->name(TableName::RUN_PROCESS)
+                                ->where([
+                                    'run_id'  => $runData['run_id'],
+                                    'flow_id' => $flowId,
+                                    'status'  => FlowCons::PROCESSING,
+                                ])
+                                ->whereIn('process_id', $needFinishProcessIds)
+                                ->update([
+                                    'status'           => FlowCons::FINISH,
+                                    'handle_time'      => time(),
+                                    'approval_opinion' => '步骤回退关闭相关流程'
+                                ]);
+
+                            #找出上一步步骤
+                            #回退步骤
+                            $rollbackProcessRunData = [
+                                'run_id'       => $runData['run_id'],
+                                'process_id'   => $rollbackProcess['process_id'],
+                                'flow_id'      => $flowId,
+                                'status'       => FlowCons::RUNNING_STATUS,
+                                'receive_time' => time(),
+                                'create_time'  => time(),
+                            ];
+                            $insertRunProcess = $db->name(TableName::RUN_PROCESS)->insert($rollbackProcessRunData);
+
+                            #当前仍在运行的步骤
                             $nowProcessIds = $db->name(TableName::RUN_PROCESS)
                                 ->where([
                                     'run_id'  => $runData['run_id'],
@@ -240,12 +259,12 @@ class Operation
                             #全部退回
                             #更新运行日志
                             $logRes = $db->name(TableName::RUN_LOG)->insert([
-                                'flow_id'    => $flowId,
-                                'process_id' => $nowProcess['process_id'],
-                                'run_id'     => $runData['run_id'],
-                                'user_id'    => $userInfo['user_id'],
+                                'flow_id'     => $flowId,
+                                'process_id'  => $nowProcess['process_id'],
+                                'run_id'      => $runData['run_id'],
+                                'user_id'     => $userInfo['user_id'],
                                 'create_time' => time(),
-                                'content'    => '用户ID:' . $userInfo['user_id'] . '驳回了整个流程'
+                                'content'     => '用户ID:' . $userInfo['user_id'] . '驳回了整个流程' . ',审核意见:' . $opInfo['approval_opinion']
                             ]);
                             #所有处理中步骤变为已结束
                             $saveAllProcess = $db->name(TableName::RUN_PROCESS)
@@ -254,7 +273,11 @@ class Operation
                                     'flow_id' => $flowId,
                                     'status'  => FlowCons::PROCESSING,
                                 ])
-                                ->select();
+                                ->update([
+                                    'status'           => FlowCons::FINISH,
+                                    'handle_time'      => time(),
+                                    'approval_opinion' => '步骤已被全部打回'
+                                ]);
                             #变更运行表为已结束
                             $updateRun = $db->name(TableName::RUN)
                                 ->where([
@@ -267,8 +290,9 @@ class Operation
                                     'end_time'        => time(),
                                     'update_time'     => time(),
                                 ]);
+                            $insertRunProcess = true;
                         }
-                        if ($saveProcess && $logRes && $updateRun) {
+                        if ($saveProcess && $logRes && $updateRun && $insertRunProcess) {
                             $db->commit();
                             return [
                                 'status' => ClientReturn::SUCCESS,

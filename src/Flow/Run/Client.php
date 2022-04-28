@@ -51,16 +51,18 @@ class Client extends BaseClient
             #拿出开始,结束及普通节点
             $processData = [];
             array_map(function ($value) use (&$processData) {
-                if ($value['process_type'] == 0) {
-                    $processData['start'] = $value;
-                } elseif ($value['process_type'] == 2) {
-                    $processData['end'] = $value;
+                if ($value['process_type'] == FlowCons::START_PROCESS) {
+                    $processData['start'] = $value + ['level' => 0, 'pid' => 0];
+                } elseif ($value['process_type'] == FlowCons::END_PROCESS) {
+                    $processData['end'] = $value + ['level' => 0, 'pid' => 0];
                 } else {
                     $processData['process'][$value['process_id']] = $value;
                 }
             }, $template['flow_process']);
             #递归整理所有普通节点，按顺序排列
-            $tmpProcess = $this->_recursionProcess($processData['process'], $processData['start']['next_process_ids']);
+            $tmpProcess = $this->_recursionProcess(
+                $processData['process'], $processData['start']['next_process_ids'], $processData['start']['process_id']
+            );
             #进行倒序处理，并添加回结束及开始节点。用于插入数据库
             $middleProcess = array_values(array_column(array_reverse($tmpProcess), null, 'process_id'));
             $finalProcess = array_merge([
@@ -92,6 +94,8 @@ class Client extends BaseClient
                     'process_desc'     => $value['process_desc'],
                     'process_type'     => $value['process_type'],
                     'next_process_ids' => $nextProcessId,
+                    'level'            => $value['level'],
+                    'branch_pid'       => $value['pid'],
                     'role_ids'         => $value['role_ids'],
                     'can_back'         => $value['can_back'],
                     'sign_type'        => $value['sign_type'],
@@ -128,11 +132,17 @@ class Client extends BaseClient
             //找出要运行的工作流
             $flowData = $this->db->name(TableName::FLOW)->find($flowId);
             $this->assert(empty($flowData), '未找到对应工作流');
+            #找出是否已经开启过
+            $alreadyRunId = $this->db->name(TableName::RUN)->where([
+                'flow_id' => $flowId
+            ])->value('run_id');
+            $this->assert($alreadyRunId, '该工作流已开启');
 
             //找出第一个步骤
             $firstProcess = $this->db->name(TableName::PROCESS)
                 ->where([
-                    'process_type' => 0
+                    'process_type' => 0,
+                    'flow_id'      => $flowId
                 ])->find();
             $this->assert(empty($firstProcess), '工作流存在错误，缺失第一步流程！');
 
@@ -160,17 +170,17 @@ class Client extends BaseClient
 
             //添加日志
             $log = $this->db->name(TableName::RUN_LOG)->insert([
-                'flow_id'    => $flowId,
-                'process_id' => $firstProcess['process_id'],
-                'run_id'     => $runId,
-                'user_id'    => $userId,
+                'flow_id'     => $flowId,
+                'process_id'  => $firstProcess['process_id'],
+                'run_id'      => $runId,
+                'user_id'     => $userId,
                 'create_time' => $this->nowTime,
-                'content'    => '用户ID:' . $userId . '发起了新的名为' . $flowData['flow_name'] . '的工作流',
+                'content'     => '用户ID:' . $userId . '发起了新的名为' . $flowData['flow_name'] . '的工作流',
             ]);
 
             $this->assert(!$log || !$runProcessId || !$runId, '发起工作流失败');
             $this->db->commit();
-            return $this->success(['flow_id' => $flowId]);
+            return $this->success(['run_id' => $runId]);
         } catch (Exception $exception) {
             $this->db->rollback();
             return $this->fail($exception->getMessage());
@@ -209,15 +219,22 @@ class Client extends BaseClient
      *
      * @return array
      */
-    public function _recursionProcess($process, $processIds)
+    public function _recursionProcess($process, $processIds, $pid = 0, $level = 1)
     {
         $ids = explode(',', $processIds);
         $data = [];
+        #说明分叉了，层级加一
+        if (count($ids) > 1) {
+            $level += 1;
+        }
         foreach ($ids as $v) {
             if (isset($process[$v])) {
-                $data[] = $process[$v];
+                $data[] = $process[$v] + ['level' => $level, 'pid' => $pid];
                 if ($process[$v]['next_process_ids']) {
-                    $tmp = $this->_recursionProcess($process, $process[$v]['next_process_ids']);
+                    if (count(explode(',', $process[$v]['next_process_ids'])) > 1) {
+                        $pid = $process[$v]['process_id'];
+                    }
+                    $tmp = $this->_recursionProcess($process, $process[$v]['next_process_ids'], $pid, $level);
                     if (!empty($tmp)) {
                         $data = array_merge($data, $tmp);
                     }
