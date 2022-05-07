@@ -75,7 +75,7 @@ class BaseClient
                     'process_desc'     => '审核报价单项目是否无误',        #步骤描述
                     'process_type'     => 1,                 #步骤类型  0为开始 1为步骤 2为结束
                     'next_process_ids' => 25,                 #下一步骤IDS
-                    'role_ids'         => 8,                 #审核角色IDS
+                    'role_ids'         => '7,8',                 #审核角色IDS
                     'can_back'         => 1,                 #是否可驳回 0否 1是
                     'sign_type'        => 0,                 #签名模式 0或签 1会签
                 ],
@@ -84,20 +84,10 @@ class BaseClient
                     'process_name'     => '生成报价单',        #步骤名
                     'process_desc'     => '创建一个报价单，并且自己审核',        #步骤描述
                     'process_type'     => 0,                 #步骤类型  0为开始 1为步骤 2为结束
-                    'next_process_ids' => 55,                 #下一步骤IDS
-                    'role_ids'         => 1,                 #审核角色IDS
-                    'can_back'         => 0,                 #是否可驳回 0否 1是
-                    'sign_type'        => 0,                 #签名模式 0或签 1会签 
-                ],
-                [
-                    'process_id'       => 55,                 #步骤ID
-                    'process_name'     => '报价单自审111',        #步骤名
-                    'process_desc'     => '员工自审报价单',        #步骤描述
-                    'process_type'     => 1,                 #步骤类型  0为开始 1为步骤 2为结束
                     'next_process_ids' => 56,                 #下一步骤IDS
                     'role_ids'         => 1,                 #审核角色IDS
                     'can_back'         => 0,                 #是否可驳回 0否 1是
-                    'sign_type'        => 0,                 #签名模式 0或签 1会签
+                    'sign_type'        => 0,                 #签名模式 0或签 1会签 
                 ],
                 [
                     'process_id'       => 56,                 #步骤ID
@@ -125,7 +115,7 @@ class BaseClient
                     'process_desc'     => '审核报价2222单金额是否无误',        #步骤描述
                     'process_type'     => 1,                 #步骤类型  0为开始 1为步骤 2为结束
                     'next_process_ids' => 44,                 #下一步骤IDS
-                    'role_ids'         => 1,                 #审核角色IDS
+                    'role_ids'         => 5,                 #审核角色IDS
                     'can_back'         => 1,                 #是否可驳回 0否 1是
                     'sign_type'        => 1,                 #签名模式 0或签 1会签 
                 ],

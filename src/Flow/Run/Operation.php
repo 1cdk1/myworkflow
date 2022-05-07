@@ -58,17 +58,6 @@ class Operation
                 switch ($name) {
                     case 'ok':#通过
                         $db->startTrans();
-                        #把当前运行步骤设为完成
-                        $saveProcess = $db->name(TableName::RUN_PROCESS)->where([
-                            'process_id' => $nowProcess['process_id'],
-                            'run_id'     => $runData['run_id'],
-                            'flow_id'    => $flowId,
-                            'status'     => FlowCons::PROCESSING,
-                        ])->update([
-                            'status'           => FlowCons::AGREE,
-                            'handle_time'      => time(),
-                            'approval_opinion' => $opInfo['approval_opinion']
-                        ]);
                         #更新运行日志
                         $logRes = $db->name(TableName::RUN_LOG)->insert([
                             'flow_id'     => $flowId,
@@ -79,6 +68,66 @@ class Operation
                             'content'     => '用户ID:' . $userInfo['user_id'] . '审批通过了' . $nowProcess['process_name'] . '步骤' . ',审核意见:'
                                 . $opInfo['approval_opinion']
                         ]);
+
+                        $saveProcess = false;
+                        #todo 判断当前步骤会签还是或签
+                        if ($nowProcess['sign_type'] == FlowCons::SIGN_AND) {
+                            #需要会签通过角色
+                            $needSign = explode(',', $nowProcess['role_ids']);
+                            #获取当前步骤会签情况
+                            $nowProcessRun = $db->name(TableName::RUN_PROCESS)->where([
+                                'process_id' => $nowProcess['process_id'],
+                                'run_id'     => $runData['run_id'],
+                                'flow_id'    => $flowId,
+                                'status'     => FlowCons::PROCESSING,
+                            ])->find();
+                            #已经会签通过角色
+                            $isSign = explode(',', $nowProcessRun['is_sign']);
+                            if (in_array($userInfo['role_id'], $isSign)) {
+                                throw new Exception('该步骤你已经处理过，无需重复处理');
+                            }
+                            #会签角色
+                            empty($nowProcessRun['is_sign']) ? $isSign = [$userInfo['role_id']] : $isSign[] = $userInfo['role_id'];
+                            #审批意见
+                            $approvalOpinion = explode(',', $nowProcessRun['approval_opinion']);
+                            $text = '角色ID为' . $userInfo['role_id'] . '的' . $userInfo['user_id'] . "用户给出的审批意见为"
+                                . $opInfo['approval_opinion'];
+                            empty($nowProcessRun['approval_opinion']) ? $approvalOpinion = [$text] : $approvalOpinion[] = $text;
+                            $opInfo['approval_opinion'] = implode(',', array_unique($approvalOpinion));
+                            #更新会签数据
+                            $saveProcess = $db->name(TableName::RUN_PROCESS)->where([
+                                'process_id' => $nowProcess['process_id'],
+                                'run_id'     => $runData['run_id'],
+                                'flow_id'    => $flowId,
+                                'status'     => FlowCons::PROCESSING,
+                            ])->update([
+                                'handle_time'      => time(),
+                                'is_sign'          => implode(',', array_unique($isSign)),
+                                'approval_opinion' => $opInfo['approval_opinion']
+                            ]);
+                            if (count($needSign) == count($isSign)) {
+                                $isFinish = true;
+                            } else {
+                                $isFinish = false;
+                            }
+                        } else {
+                            $isFinish = true;
+                        }
+
+                        #如果当前步骤已完成
+                        if ($isFinish) {
+                            #把当前运行步骤设为完成
+                            $saveProcess = $db->name(TableName::RUN_PROCESS)->where([
+                                'process_id' => $nowProcess['process_id'],
+                                'run_id'     => $runData['run_id'],
+                                'flow_id'    => $flowId,
+                                'status'     => FlowCons::PROCESSING,
+                            ])->update([
+                                'status'           => FlowCons::AGREE,
+                                'handle_time'      => time(),
+                                'approval_opinion' => $opInfo['approval_opinion']
+                            ]);
+                        }
                         #获取下一步骤
                         $nextProcess = $db->name(TableName::PROCESS)
                             ->whereIn('process_id', explode(',', $nowProcess['next_process_ids']))
@@ -87,8 +136,6 @@ class Operation
                         if (empty($nextProcess)) {
                             throw new Exception('工作流存在异常，未找到下一步骤');
                         }
-                        #todo 检查是否存在未完成会签步骤
-                        #todo 判断当前步骤会签还是或签
                         #检查下一步骤之前的步骤是否有全部完成，没有则不动作
                         $beforeProcessIds = $db->name(TableName::PROCESS)
                             ->whereIn('next_process_ids', array_column($nextProcess, 'process_id'))

@@ -18,6 +18,10 @@ class FlowCons
 
     #步骤类型
     const START_PROCESS = 0;
-    const STEP_PROCESS=1;
-    const END_PROCESS=2;
+    const STEP_PROCESS = 1;
+    const END_PROCESS = 2;
+
+    #签名模式
+    const  SIGN_OR = 0; #或签
+    const  SIGN_AND = 1;#会签
 }
