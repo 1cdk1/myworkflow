@@ -200,7 +200,7 @@ class Client extends BaseClient
      *
      * @return array|false
      */
-    public function runFlow(string $operation, int $flowId, array $userInfo, array $opInfo)
+    public function runFlow( string $operation, int $flowId, array $userInfo, array $opInfo)
     {
         $res = Operation::$operation($this->db, $flowId, $userInfo, $opInfo);
         return $res['status'] ? $this->success($res) : $this->fail($res['msg']);

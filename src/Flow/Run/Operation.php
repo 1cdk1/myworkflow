@@ -164,6 +164,9 @@ class Operation
                         }
                         break;
                     case 'back':#驳回
+                        if (empty($nowProcess['can_back'])) {
+                            throw new Exception('当前步骤不支持驳回');
+                        }
                         $db->startTrans();
                         #把当前步骤设为已驳回
                         $saveProcess = $db->name(TableName::RUN_PROCESS)->where([
@@ -302,10 +305,12 @@ class Operation
                             echo $saveProcess . ',' . $logRes . ',' . $saveAllProcess . ',' . $updateRun;
                             throw new Exception('操作保存失败');
                         }
+                    case 'sign':#会签
+
+                        break;
                 }
 
             } catch (Exception $e) {
-                $db->rollback();
                 return [
                     'status' => ClientReturn::FAIL,
                     'msg'    => $e->getMessage(),
