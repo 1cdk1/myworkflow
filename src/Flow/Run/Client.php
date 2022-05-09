@@ -185,8 +185,6 @@ class Client extends BaseClient
             $this->db->rollback();
             return $this->fail($exception->getMessage());
         }
-
-
     }
 
     /**
@@ -200,15 +198,38 @@ class Client extends BaseClient
      *
      * @return array|false
      */
-    public function runFlow( string $operation, int $flowId, array $userInfo, array $opInfo)
+    public function runFlow(string $operation, int $flowId, array $userInfo, array $opInfo)
     {
         $res = Operation::$operation($this->db, $flowId, $userInfo, $opInfo);
         return $res['status'] ? $this->success($res) : $this->fail($res['msg']);
     }
 
+    /**
+     * 获取当前步骤
+     *
+     * @param $flowId
+     *
+     * @return array|false
+     */
     public function getNowProcess($flowId)
     {
-
+        try {
+            $runData = $this->db->name(TableName::RUN)->where('flow_id', $flowId)->find();
+            if (empty($runData)) {
+                throw new Exception('未找到该运行中的流水线');
+            }
+            #当前步骤
+            $nowProcessArr = $this->db->name(TableName::PROCESS)
+                ->whereIn('process_id', explode(',', $runData['now_process_ids']))
+                ->select()
+                ->toArray();
+            if (empty($nowProcessArr)) {
+                throw new Exception('当前流水线存在错误,请重新创建');
+            }
+            return $this->success($nowProcessArr);
+        } catch (Exception $e) {
+            return $this->fail($e->getMessage());
+        }
     }
 
     /**

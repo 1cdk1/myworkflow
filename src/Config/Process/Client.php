@@ -8,7 +8,12 @@ class Client extends BaseClient
 {
     public function getList()
     {
-        return 11111;
+        return json_encode([
+            'data'     => [$this->demoTemplate1],
+            'total'    => 1,
+            'page'     => 1,
+            'pre_page' => 10
+        ]);
     }
 
     public function getOne($id)

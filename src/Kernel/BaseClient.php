@@ -166,6 +166,14 @@ class BaseClient
                 'role_id' => 8,
                 'name'    => '项目总监',
             ],
+            [
+                'role_id' => 9,
+                'name'    => '包工头',
+            ],
+            [
+                'role_id' => 10,
+                'name'    => '施工单位',
+            ],
         ];
 
     /**

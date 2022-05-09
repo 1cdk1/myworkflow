@@ -11,9 +11,15 @@ class Client extends BaseClient
         return json_encode($this->demoRole);
     }
 
-    public function getOne($id)
+    public function getOne($id): array
     {
-        return $id;
+        $data = [];
+        array_map(function ($v) use ($id, &$data) {
+            if ($v['role_id'] == $id) {
+                $data = $v;
+            }
+        }, $this->demoRole);
+        return $data;
     }
 
 }

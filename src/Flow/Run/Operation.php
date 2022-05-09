@@ -55,9 +55,45 @@ class Operation
                     throw new Exception('当前角色没有权限操作');
                 }
 
+                $db->startTrans();
                 switch ($name) {
+                    case 'sign':#添加审批
+                        #更新运行日志
+                        $logRes = $db->name(TableName::RUN_LOG)->insert([
+                            'flow_id'     => $flowId,
+                            'process_id'  => $nowProcess['process_id'],
+                            'run_id'      => $runData['run_id'],
+                            'user_id'     => $userInfo['user_id'],
+                            'create_time' => time(),
+                            'content'     => '用户ID:' . $userInfo['user_id'] . '新建了转出审批流程，参与审批的角色有' . $opInfo['sign_role_id']
+                        ]);
+
+                        #在当前流程之后新增审批。将当前流程结束。并插入新的审批流程
+                        $newProcess = [
+                            'flow_id'          => $flowId,
+                            'process_name'     => '转出审批',
+                            'level'            => $nowProcess['level'],
+                            'branch_pid'       => $nowProcess['branch_pid'],
+                            'next_process_ids' => $nowProcess['next_process_ids'],
+                            'process_desc'     => '新增的转出审批流程',
+                            'sign_type'        => $opInfo['sign_type'],
+                            'role_ids'         => $opInfo['sign_role_id'],
+                            'can_back'         => 1,
+                            'process_type'     => FlowCons::STEP_PROCESS,
+                        ];
+                        $newProcessId = $db->name(TableName::PROCESS)->insertGetId($newProcess);
+
+                        #更新审批流程顺序,将当前流程的下一步ID更新为新流程ID，
+                        $nowProcessUpdate = $db->name(TableName::PROCESS)
+                            ->where('process_id', $nowProcess['process_id'])
+                            ->update([
+                                'next_process_ids' => $newProcessId
+                            ]);
+                        #重新获取当前流程
+                        $nowProcess = $db->name(TableName::PROCESS)->find($nowProcess['process_id']);
+
+                    #接着走审批通过流程
                     case 'ok':#通过
-                        $db->startTrans();
                         #更新运行日志
                         $logRes = $db->name(TableName::RUN_LOG)->insert([
                             'flow_id'     => $flowId,
@@ -214,7 +250,6 @@ class Operation
                         if (empty($nowProcess['can_back'])) {
                             throw new Exception('当前步骤不支持驳回');
                         }
-                        $db->startTrans();
                         #把当前步骤设为已驳回
                         $saveProcess = $db->name(TableName::RUN_PROCESS)->where([
                             'process_id' => $nowProcess['process_id'],
@@ -352,9 +387,6 @@ class Operation
                             echo $saveProcess . ',' . $logRes . ',' . $saveAllProcess . ',' . $updateRun;
                             throw new Exception('操作保存失败');
                         }
-                    case 'sign':#会签
-
-                        break;
                 }
 
             } catch (Exception $e) {
