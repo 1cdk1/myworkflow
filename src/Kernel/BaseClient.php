@@ -234,7 +234,11 @@ class BaseClient
         $this->app = $app;
         $this->nowTime = time();
         //数据库
-        $this->db = Db::connect();
+        if ($app->offsetExists('db') && $app->offsetGet('db') instanceof ConnectionInterface) {
+            $this->db = $app->offsetGet('db');
+        } else {
+            $this->db = Db::connect();
+        }
 
         #验证token，如果不同重新获取并同步远端的基本数据
         if (!$app->offsetExists('db') || $app->offsetGet('token') != 'test') {
@@ -262,9 +266,6 @@ class BaseClient
             $this->db->name(TableName::ROLE)->where('role_id', '>', 0)->delete();
             $this->db->name(TableName::ROLE)->insertAll($roleInsert);
         }
-        /*if ($app->offsetExists('db') && $app->offsetGet('db') instanceof ConnectionInterface) {
-            $this->db = $app->offsetGet('db');
-        }*/
     }
 
     /**
