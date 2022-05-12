@@ -7,8 +7,10 @@
 namespace MyWorkFlow\Kernel;
 
 use MyWorkFlow\Constants\ClientReturn;
+use MyWorkFlow\Constants\TableName;
 use think\db\ConnectionInterface;
 use think\Exception;
+use think\facade\Db;
 
 class BaseClient
 {
@@ -48,6 +50,7 @@ class BaseClient
                     'role_ids'         => 0,                 #审核角色IDS
                     'can_back'         => 0,                 #是否可驳回 0否 1是
                     'sign_type'        => 0,                 #签名模式 0或签 1会签 
+                    'status_id'        => 0,                 #对应状态ID
                 ],
                 [
                     'process_id'       => 23,                 #步骤ID
@@ -57,7 +60,8 @@ class BaseClient
                     'next_process_ids' => 34,                 #下一步骤IDS
                     'role_ids'         => 4,                 #审核角色IDS
                     'can_back'         => 1,                 #是否可驳回 0否 1是
-                    'sign_type'        => 0,                 #签名模式 0或签 1会签 
+                    'sign_type'        => 0,                 #签名模式 0或签 1会签
+                    'status_id'        => 45,                 #对应状态ID
                 ],
                 [
                     'process_id'       => 21,                 #步骤ID
@@ -67,7 +71,8 @@ class BaseClient
                     'next_process_ids' => 99,                 #下一步骤IDS
                     'role_ids'         => 2,                 #审核角色IDS
                     'can_back'         => 1,                 #是否可驳回 0否 1是
-                    'sign_type'        => 0,                 #签名模式 0或签 1会签 
+                    'sign_type'        => 0,                 #签名模式 0或签 1会签
+                    'status_id'        => 23,                 #对应状态ID
                 ],
                 [
                     'process_id'       => 99,                 #步骤ID
@@ -78,6 +83,7 @@ class BaseClient
                     'role_ids'         => '7,8',                 #审核角色IDS
                     'can_back'         => 1,                 #是否可驳回 0否 1是
                     'sign_type'        => 0,                 #签名模式 0或签 1会签
+                    'status_id'        => 34,                 #对应状态ID
                 ],
                 [
                     'process_id'       => 31,                 #步骤ID
@@ -87,7 +93,8 @@ class BaseClient
                     'next_process_ids' => 56,                 #下一步骤IDS
                     'role_ids'         => 1,                 #审核角色IDS
                     'can_back'         => 0,                 #是否可驳回 0否 1是
-                    'sign_type'        => 0,                 #签名模式 0或签 1会签 
+                    'sign_type'        => 0,                 #签名模式 0或签 1会签
+                    'status_id'        => 1,                 #对应状态ID
                 ],
                 [
                     'process_id'       => 56,                 #步骤ID
@@ -98,6 +105,7 @@ class BaseClient
                     'role_ids'         => 1,                 #审核角色IDS
                     'can_back'         => 0,                 #是否可驳回 0否 1是
                     'sign_type'        => 0,                 #签名模式 0或签 1会签
+                    'status_id'        => 12,                 #对应状态ID
                 ],
                 [
                     'process_id'       => 25,                 #步骤ID
@@ -107,7 +115,8 @@ class BaseClient
                     'next_process_ids' => 16,                 #下一步骤IDS
                     'role_ids'         => 3,                 #审核角色IDS
                     'can_back'         => 0,                 #是否可驳回 0否 1是
-                    'sign_type'        => 0,                 #签名模式 0或签 1会签 
+                    'sign_type'        => 0,                 #签名模式 0或签 1会签
+                    'status_id'        => 78,                 #对应状态ID
                 ],
                 [
                     'process_id'       => 34,                 #步骤ID
@@ -117,7 +126,8 @@ class BaseClient
                     'next_process_ids' => 44,                 #下一步骤IDS
                     'role_ids'         => 5,                 #审核角色IDS
                     'can_back'         => 1,                 #是否可驳回 0否 1是
-                    'sign_type'        => 1,                 #签名模式 0或签 1会签 
+                    'sign_type'        => 1,                 #签名模式 0或签 1会签
+                    'status_id'        => 56,                 #对应状态ID
                 ],
                 [
                     'process_id'       => 44,                 #步骤ID
@@ -127,7 +137,8 @@ class BaseClient
                     'next_process_ids' => 25,                 #下一步骤IDS
                     'role_ids'         => '6,7',                 #审核角色IDS
                     'can_back'         => 1,                 #是否可驳回 0否 1是
-                    'sign_type'        => 0,                 #签名模式 0或签 1会签 
+                    'sign_type'        => 0,                 #签名模式 0或签 1会签
+                    'status_id'        => 67,                 #对应状态ID
                 ],
             ]
         ];
@@ -135,44 +146,80 @@ class BaseClient
     protected $demoRole
         = [
             [
-                'role_id' => 1,
-                'name'    => '市场经营部人员',
+                'role_id'   => 1,
+                'role_name' => '市场经营部人员',
             ],
             [
-                'role_id' => 2,
-                'name'    => '综合部人员',
+                'role_id'   => 2,
+                'role_name' => '综合部人员',
             ],
             [
-                'role_id' => 3,
-                'name'    => '检测部人员',
+                'role_id'   => 3,
+                'role_name' => '检测部人员',
             ],
             [
-                'role_id' => 4,
-                'name'    => '财务部人员',
+                'role_id'   => 4,
+                'role_name' => '财务部人员',
             ],
             [
-                'role_id' => 5,
-                'name'    => '财务部主管',
+                'role_id'   => 5,
+                'role_name' => '财务部主管',
             ],
             [
-                'role_id' => 6,
-                'name'    => '副总',
+                'role_id'   => 6,
+                'role_name' => '副总',
             ],
             [
-                'role_id' => 7,
-                'name'    => '总经理',
+                'role_id'   => 7,
+                'role_name' => '总经理',
             ],
             [
-                'role_id' => 8,
-                'name'    => '项目总监',
+                'role_id'   => 8,
+                'role_name' => '项目总监',
             ],
             [
-                'role_id' => 9,
-                'name'    => '包工头',
+                'role_id'   => 9,
+                'role_name' => '包工头',
             ],
             [
-                'role_id' => 10,
-                'name'    => '施工单位',
+                'role_id'   => 10,
+                'role_name' => '施工单位',
+            ],
+        ];
+
+    protected $demoStatus
+        = [
+            [
+                'status_id'   => 1,
+                'status_name' => '带创建表单',
+            ],
+            [
+                'status_id'   => 12,
+                'status_name' => '待自审',
+            ],
+            [
+                'status_id'   => 23,
+                'status_name' => '待项目经理审核',
+            ],
+            [
+                'status_id'   => 34,
+                'status_name' => '待项目总监审核',
+            ],
+            [
+                'status_id'   => 45,
+                'status_name' => '待财务人员审核',
+            ],
+            [
+                'status_id'   => 56,
+                'status_name' => '待财务总监审核',
+            ],
+            [
+                'status_id'   => 67,
+                'status_name' => '待CFO审核',
+            ],
+            [
+                'status_id'   => 78,
+                'status_name' => '待施工',
             ],
         ];
 
@@ -187,9 +234,37 @@ class BaseClient
         $this->app = $app;
         $this->nowTime = time();
         //数据库
-        if ($app->offsetExists('db') && $app->offsetGet('db') instanceof ConnectionInterface) {
-            $this->db = $app->offsetGet('db');
+        $this->db = Db::connect();
+
+        #验证token，如果不同重新获取并同步远端的基本数据
+        if (!$app->offsetExists('db') || $app->offsetGet('token') != 'test') {
+            //拉取远端状态信息
+            $statusInfo = $this->demoStatus;
+            //更新状态表
+            $statusInsert = array_map(function ($v) {
+                return [
+                    'status_id'   => $v['status_id'],
+                    'status_name' => $v['status_name'],
+                    'create_time' => $this->nowTime,
+                ];
+            }, $statusInfo);
+            $this->db->name(TableName::STATUS)->where('status_id', '>', 0)->delete();
+            $this->db->name(TableName::STATUS)->insertAll($statusInsert);
+            //更新角色表
+            $roleInfo = $this->demoRole;
+            $roleInsert = array_map(function ($v) {
+                return [
+                    'role_id'     => $v['role_id'],
+                    'role_name'   => $v['role_name'],
+                    'create_time' => $this->nowTime,
+                ];
+            }, $roleInfo);
+            $this->db->name(TableName::ROLE)->where('role_id', '>', 0)->delete();
+            $this->db->name(TableName::ROLE)->insertAll($roleInsert);
         }
+        /*if ($app->offsetExists('db') && $app->offsetGet('db') instanceof ConnectionInterface) {
+            $this->db = $app->offsetGet('db');
+        }*/
     }
 
     /**

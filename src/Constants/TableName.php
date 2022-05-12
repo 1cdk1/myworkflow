@@ -9,4 +9,6 @@ class TableName
     const RUN = 'wf_run';
     const RUN_LOG = 'wf_run_log';
     const RUN_PROCESS = 'wf_run_process';
+    const ROLE = 'wf_role';
+    const STATUS = 'wf_status';
 }

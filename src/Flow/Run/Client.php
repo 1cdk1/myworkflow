@@ -97,6 +97,7 @@ class Client extends BaseClient
                     'level'            => $value['level'],
                     'branch_pid'       => $value['pid'],
                     'role_ids'         => $value['role_ids'],
+                    'status_id'        => $value['status_id'],
                     'can_back'         => $value['can_back'],
                     'sign_type'        => $value['sign_type'],
                     'create_time'      => $this->nowTime
@@ -227,6 +228,43 @@ class Client extends BaseClient
                 throw new Exception('当前流水线存在错误,请重新创建');
             }
             return $this->success($nowProcessArr);
+        } catch (Exception $e) {
+            return $this->fail($e->getMessage());
+        }
+    }
+
+
+    public function getCanOperate($flowId, $roleId)
+    {
+        try {
+            $runData = $this->db->name(TableName::RUN)->where('flow_id', $flowId)->find();
+            if (empty($runData)) {
+                throw new Exception('未找到该运行中的流水线');
+            }
+            #当前步骤
+            $nowProcessArr = $this->db->name(TableName::PROCESS)
+                ->whereIn('process_id', explode(',', $runData['now_process_ids']))
+                ->select()
+                ->toArray();
+            if (empty($nowProcessArr)) {
+                throw new Exception('当前流水线存在错误,请重新创建');
+            }
+            $nowProcess = null;
+            array_map(function ($value) use ($roleId, &$nowProcess) {
+                $roleIds = explode(',', $value['role_ids']);
+                if (in_array($roleId, $roleIds) && $nowProcess === null) {
+                    $nowProcess = $value;
+                }
+            }, $nowProcessArr);
+            if ($nowProcess === null) {
+                throw new Exception('当前角色没有权限操作');
+            } else {
+                $op = ['ok', 'sign'];
+                if ($nowProcess['can_back']) {
+                    $op[] = 'back';
+                }
+            }
+            return $this->success($op);
         } catch (Exception $e) {
             return $this->fail($e->getMessage());
         }
