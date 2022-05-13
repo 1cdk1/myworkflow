@@ -241,7 +241,7 @@ class BaseClient
         }
 
         #验证token，如果不同重新获取并同步远端的基本数据
-        if (!$app->offsetExists('db') || $app->offsetGet('token') != 'test') {
+        if (!$app->offsetExists('token') || $app->offsetGet('token') != 'test') {
             //拉取远端状态信息
             $statusInfo = $this->demoStatus;
             //更新状态表
