@@ -164,25 +164,44 @@ class Operation
                                 'approval_opinion' => $opInfo['approval_opinion']
                             ]);
                         }
-                        #获取下一步骤
-                        $nextProcess = $db->name(TableName::PROCESS)
-                            ->whereIn('process_id', explode(',', $nowProcess['next_process_ids']))
-                            ->select()
-                            ->toArray();
-                        if (empty($nextProcess)) {
-                            throw new Exception('工作流存在异常，未找到下一步骤');
+
+                        #判断是否为网关类，如为网关类是否满足条件
+                        if ($nowProcess['process_type'] == FlowCons::GATEWAY_PROCESS
+                            && self::checkCondition(
+                                json_decode($nowProcess['condition'], true), $opInfo['condition']
+                            )
+                        ) {
+                            #获取下一步骤
+                            $nextProcess = $db->name(TableName::PROCESS)
+                                ->whereIn('process_id', $nowProcess['jump_process_id'])
+                                ->select()
+                                ->toArray();
+                            if (empty($nextProcess)) {
+                                throw new Exception('工作流存在异常，未找到下一步骤');
+                            }
+                            $needInsert = true;
+                        } else {
+                            #获取下一步骤
+                            $nextProcess = $db->name(TableName::PROCESS)
+                                ->whereIn('process_id', explode(',', $nowProcess['next_process_ids']))
+                                ->select()
+                                ->toArray();
+                            if (empty($nextProcess)) {
+                                throw new Exception('工作流存在异常，未找到下一步骤');
+                            }
+                            #检查下一步骤之前的步骤是否有全部完成，没有则不动作
+                            $beforeProcessIds = $db->name(TableName::PROCESS)
+                                ->whereIn('next_process_ids', array_column($nextProcess, 'process_id'))
+                                ->where('process_id', '<>', $nowProcess['process_id'])
+                                ->column('process_id');
+                            $beforeProcessRun = $db->name(TableName::RUN_PROCESS)
+                                ->whereIn('process_id', $beforeProcessIds)
+                                ->where('status', FlowCons::AGREE)
+                                ->count('process_id');
+                            #如果下一步骤之前的步骤已全部完成,则插入下一步骤
+                            $needInsert = count($beforeProcessIds) == $beforeProcessRun ? true : false;
                         }
-                        #检查下一步骤之前的步骤是否有全部完成，没有则不动作
-                        $beforeProcessIds = $db->name(TableName::PROCESS)
-                            ->whereIn('next_process_ids', array_column($nextProcess, 'process_id'))
-                            ->where('process_id', '<>', $nowProcess['process_id'])
-                            ->column('process_id');
-                        $beforeProcessRun = $db->name(TableName::RUN_PROCESS)
-                            ->whereIn('process_id', $beforeProcessIds)
-                            ->where('status', FlowCons::AGREE)
-                            ->count('process_id');
-                        #如果下一步骤之前的步骤已全部完成,则插入下一步骤
-                        if (count($beforeProcessIds) == $beforeProcessRun) {
+                        if ($needInsert) {
                             #组装数据
                             $nextProcessRunData = [];
                             array_map(function ($value) use (&$nextProcessRunData, $runData, $flowId) {
@@ -403,4 +422,24 @@ class Operation
         }
     }
 
+    /**
+     * 检查条件是否全部通过
+     *
+     * @param $role array 条件
+     * @param $now  array 当前情况
+     *
+     * @return bool
+     */
+    public static function checkCondition(array $role, array $now): bool
+    {
+        #通过个数
+        $pass = 0;
+        array_map(function ($v, $k) use ($now, &$pass) {
+            if ($v == $now[$k]) {
+                $pass++;
+            }
+        }, $role, array_keys($role));
+        #判断规则个数与通过个数是否相等
+        return count($role) == $pass;
+    }
 }

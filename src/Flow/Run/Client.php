@@ -100,12 +100,30 @@ class Client extends BaseClient
                     'status_id'        => $value['status_id'],
                     'can_back'         => $value['can_back'],
                     'sign_type'        => $value['sign_type'],
+                    'condition'        => $value['condition'],
+                    'jump_process_id'  => $value['jump_process_id'],
                     'create_time'      => $this->nowTime
                 ];
                 $nowId = $this->db->name(TableName::PROCESS)->insertGetId($processData);
                 $this->assert((!$nowId), '添加步骤失败');
                 $localNextProcessIds[$value['process_id']] = $nowId;
             }, $finalProcess);
+
+            #更新跳转网关节点的跳转ID
+            $gatewayProcess = $this->db->name(TableName::PROCESS)
+                ->where([
+                    'flow_id'      => $flowId,
+                    'process_type' => FlowCons::GATEWAY_PROCESS
+                ])
+                ->select()
+                ->toArray();
+            array_map(function ($v) use ($localNextProcessIds) {
+                $this->db->name(TableName::PROCESS)
+                    ->where('process_id', $v['process_id'])
+                    ->update([
+                        'jump_process_id' => $localNextProcessIds[$v['jump_process_id']]
+                    ]);
+            }, $gatewayProcess);
 
             $this->assert((!$flowId), '创建失败');
 
@@ -220,8 +238,10 @@ class Client extends BaseClient
                 throw new Exception('未找到该运行中的流水线');
             }
             #当前步骤
-            $nowProcessArr = $this->db->name(TableName::PROCESS)
-                ->whereIn('process_id', explode(',', $runData['now_process_ids']))
+            $nowProcessArr = $this->db->name(TableName::PROCESS)->alias('p')
+                ->leftJoin(TableName::STATUS, TableName::STATUS . '.status_id=p.status_id')
+                ->whereIn('p.process_id', explode(',', $runData['now_process_ids']))
+                ->field('p.*,' . TableName::STATUS . '.status_name')
                 ->select()
                 ->toArray();
             if (empty($nowProcessArr)) {

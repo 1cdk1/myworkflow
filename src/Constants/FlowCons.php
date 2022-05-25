@@ -20,6 +20,7 @@ class FlowCons
     const START_PROCESS = 0;
     const STEP_PROCESS = 1;
     const END_PROCESS = 2;
+    const GATEWAY_PROCESS = 3;
 
     #签名模式
     const  SIGN_OR = 0; #或签
