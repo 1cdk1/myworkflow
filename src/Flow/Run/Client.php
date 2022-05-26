@@ -253,13 +253,25 @@ class Client extends BaseClient
         }
     }
 
-
+    /**
+     * 获取当前角色在某一流水线可进行的操作
+     *
+     * @param $flowId
+     * @param $roleId
+     *
+     * @return array|false
+     */
     public function getCanOperate($flowId, $roleId)
     {
         try {
-            $runData = $this->db->name(TableName::RUN)->where('flow_id', $flowId)->find();
+            $runData = $this->db->name(TableName::RUN)
+                ->where([
+                    'flow_id' => $flowId,
+                    'status'  => FlowCons::RUNNING_STATUS
+                ])
+                ->find();
             if (empty($runData)) {
-                throw new Exception('未找到该运行中的流水线');
+                throw new Exception('未找到该流水线,检查是否为运行状态');
             }
             #当前步骤
             $nowProcessArr = $this->db->name(TableName::PROCESS)
@@ -285,6 +297,45 @@ class Client extends BaseClient
                 }
             }
             return $this->success($op);
+        } catch (Exception $e) {
+            return $this->fail($e->getMessage());
+        }
+    }
+
+    /**
+     * 获取角色在多个工作流中的操作权限
+     *
+     * @param $flowIds
+     * @param $roleId
+     *
+     * @return array|false
+     */
+    public function getRoleCanOperate($flowIds, $roleId)
+    {
+        try {
+            if (is_string($flowIds)) {
+                $flowIds = explode(',', $flowIds);
+            }
+            $runData = $this->db->name(TableName::RUN)
+                ->whereIn('flow_id', $flowIds)
+                ->where([
+                    'status' => FlowCons::RUNNING_STATUS
+                ])
+                ->column('now_process_ids', 'flow_id');
+            $process = $this->db->name(TableName::PROCESS)
+                ->whereIn('process_id', explode(',', implode(',', $runData)))
+                ->select()
+                ->toArray();
+            $canProcess = null;
+            array_map(function ($value) use ($roleId, &$canProcess) {
+                $roleIds = explode(',', $value['role_ids']);
+                if (in_array($roleId, $roleIds) && empty($canProcess[$value['flow_id']])) {
+                    $canProcess[$value['flow_id']] = $value['can_back'] ? ['ok', 'sign', 'back'] : ['ok', 'sign'];
+                } else {
+                    $canProcess[$value['flow_id']] = [];
+                }
+            }, $process);
+            return $this->success($canProcess);
         } catch (Exception $e) {
             return $this->fail($e->getMessage());
         }
