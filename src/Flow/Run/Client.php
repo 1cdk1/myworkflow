@@ -373,4 +373,26 @@ class Client extends BaseClient
         }
         return $data;
     }
+
+    public function getFlowNowStatus($flowIds)
+    {
+        try {
+            if (is_string($flowIds)) {
+                $flowIds = explode(',', $flowIds);
+            }
+            $runData = $this->db->name(TableName::RUN)
+                ->whereIn('flow_id', $flowIds)
+                ->where([
+                    'status' => FlowCons::RUNNING_STATUS
+                ])
+                ->column('now_process_ids', 'flow_id');
+            $process = $this->db->name(TableName::PROCESS)->alias('p')
+                ->join(TableName::STATUS, TableName::STATUS . '.status_id=p.status_id')
+                ->whereIn('process_id', explode(',', implode(',', $runData)))
+                ->column('status_name', 'flow_id');
+            return $this->success($process);
+        } catch (Exception $e) {
+            return $this->fail($e->getMessage());
+        }
+    }
 }
