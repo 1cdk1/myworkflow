@@ -389,7 +389,7 @@ class Client extends BaseClient
             $process = $this->db->name(TableName::PROCESS)->alias('p')
                 ->join(TableName::STATUS, TableName::STATUS . '.status_id=p.status_id')
                 ->whereIn('process_id', explode(',', implode(',', $runData)))
-                ->column('status_name', 'flow_id');
+                ->column('p.status_id,status_name', 'flow_id');
             return $this->success($process);
         } catch (Exception $e) {
             return $this->fail($e->getMessage());
