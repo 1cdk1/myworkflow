@@ -73,7 +73,7 @@ class BaseClient
                     'process_desc'     => '专家确认是否需要整改',        #步骤描述
                     'process_type'     => 3,                 #步骤类型  0为开始 1为步骤 2为结束 3为网关
                     'condition'        => '{"need_rectify":true}',
-                    'jump_process_id'  => 6,
+                    'jump_process_id'  => 7,
                     'next_process_ids' => 4,                 #下一步骤IDS
                     'role_ids'         => 3,                 #审核角色IDS
                     'can_back'         => 0,                 #是否可驳回 0否 1是
@@ -88,7 +88,7 @@ class BaseClient
                     'condition'        => '',
                     'jump_process_id'  => 0,
                     'next_process_ids' => 5,                 #下一步骤IDS
-                    'role_ids'         => 4,                 #审核角色IDS
+                    'role_ids'         => '3,4',                 #审核角色IDS
                     'can_back'         => 0,                 #是否可驳回 0否 1是
                     'sign_type'        => 0,                 #签名模式 0或签 1会签
                     'status_id'        => 4,                 #对应状态ID
@@ -108,6 +108,19 @@ class BaseClient
                 ],
                 [
                     'process_id'       => 6,                 #步骤ID
+                    'process_name'     => '服务端审核',        #步骤名
+                    'process_desc'     => '服务端审核企业整改情况',        #步骤描述
+                    'process_type'     => 1,                 #步骤类型  0为开始 1为步骤 2为结束 3为网关
+                    'condition'        => '',
+                    'jump_process_id'  => 0,
+                    'next_process_ids' => 7,                 #下一步骤IDS
+                    'role_ids'         => 2,                 #审核角色IDS
+                    'can_back'         => 1,                 #是否可驳回 0否 1是
+                    'sign_type'        => 0,                 #签名模式 0或签 1会签
+                    'status_id'        => 5,                 #对应状态ID
+                ],
+                [
+                    'process_id'       => 7,                 #步骤ID
                     'process_name'     => '结束',        #步骤名
                     'process_desc'     => '服务完成',        #步骤描述
                     'process_type'     => 2,                 #步骤类型  0为开始 1为步骤 2为结束 3为网关
@@ -117,7 +130,7 @@ class BaseClient
                     'role_ids'         => 2,                 #审核角色IDS
                     'can_back'         => 0,                 #是否可驳回 0否 1是
                     'sign_type'        => 0,                 #签名模式 0或签 1会签 
-                    'status_id'        => 6,                 #对应状态ID
+                    'status_id'        => 7,                 #对应状态ID
                 ],
             ]
         ];
@@ -166,6 +179,10 @@ class BaseClient
             ],
             [
                 'status_id'   => 6,
+                'status_name' => '待服务端审核',
+            ],
+            [
+                'status_id'   => 7,
                 'status_name' => '服务完成',
             ],
         ];
