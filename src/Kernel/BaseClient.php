@@ -49,7 +49,7 @@ class BaseClient
                     'condition'        => '',
                     'jump_process_id'  => 0,
                     'next_process_ids' => 2,                 #下一步骤IDS
-                    'role_ids'         => 2,                 #审核角色IDS
+                    'role_ids'         => '1,4',                 #审核角色IDS
                     'can_back'         => 0,                 #是否可驳回 0否 1是
                     'sign_type'        => 0,                 #签名模式 0或签 1会签 
                     'status_id'        => 1,                 #对应状态ID
@@ -62,7 +62,7 @@ class BaseClient
                     'condition'        => '',
                     'jump_process_id'  => 0,
                     'next_process_ids' => 3,                 #下一步骤IDS
-                    'role_ids'         => 3,                 #审核角色IDS
+                    'role_ids'         => '1,6',                 #审核角色IDS
                     'can_back'         => 0,                 #是否可驳回 0否 1是
                     'sign_type'        => 0,                 #签名模式 0或签 1会签 
                     'status_id'        => 2,                 #对应状态ID
@@ -72,10 +72,10 @@ class BaseClient
                     'process_name'     => '专家确认情况',        #步骤名
                     'process_desc'     => '专家确认是否需要整改',        #步骤描述
                     'process_type'     => 3,                 #步骤类型  0为开始 1为步骤 2为结束 3为网关
-                    'condition'        => '{"need_rectify":true}',
+                    'condition'        => '{"no_need_rectify":true}',
                     'jump_process_id'  => 7,
                     'next_process_ids' => 4,                 #下一步骤IDS
-                    'role_ids'         => 3,                 #审核角色IDS
+                    'role_ids'         => '1,6',                 #审核角色IDS
                     'can_back'         => 0,                 #是否可驳回 0否 1是
                     'sign_type'        => 0,                 #签名模式 0或签 1会签 
                     'status_id'        => 3,                 #对应状态ID
@@ -88,7 +88,7 @@ class BaseClient
                     'condition'        => '',
                     'jump_process_id'  => 0,
                     'next_process_ids' => 5,                 #下一步骤IDS
-                    'role_ids'         => '3,4',                 #审核角色IDS
+                    'role_ids'         => '1,2,6',                 #审核角色IDS
                     'can_back'         => 0,                 #是否可驳回 0否 1是
                     'sign_type'        => 0,                 #签名模式 0或签 1会签
                     'status_id'        => 4,                 #对应状态ID
@@ -101,7 +101,7 @@ class BaseClient
                     'condition'        => '',
                     'jump_process_id'  => 0,
                     'next_process_ids' => 6,                 #下一步骤IDS
-                    'role_ids'         => 3,                 #审核角色IDS
+                    'role_ids'         => '1,6',                 #审核角色IDS
                     'can_back'         => 1,                 #是否可驳回 0否 1是
                     'sign_type'        => 0,                 #签名模式 0或签 1会签
                     'status_id'        => 5,                 #对应状态ID
@@ -114,7 +114,7 @@ class BaseClient
                     'condition'        => '',
                     'jump_process_id'  => 0,
                     'next_process_ids' => 7,                 #下一步骤IDS
-                    'role_ids'         => 2,                 #审核角色IDS
+                    'role_ids'         => '1,4',                 #审核角色IDS
                     'can_back'         => 1,                 #是否可驳回 0否 1是
                     'sign_type'        => 0,                 #签名模式 0或签 1会签
                     'status_id'        => 5,                 #对应状态ID
@@ -127,7 +127,7 @@ class BaseClient
                     'condition'        => '',
                     'jump_process_id'  => 0,
                     'next_process_ids' => 0,                 #下一步骤IDS
-                    'role_ids'         => 2,                 #审核角色IDS
+                    'role_ids'         => '1,4',                 #审核角色IDS
                     'can_back'         => 0,                 #是否可驳回 0否 1是
                     'sign_type'        => 0,                 #签名模式 0或签 1会签 
                     'status_id'        => 7,                 #对应状态ID
@@ -139,19 +139,26 @@ class BaseClient
         = [
             [
                 'role_id'   => 1,
-                'role_name' => '保险机构',
+                'role_name' => '平台',
             ],
             [
                 'role_id'   => 2,
-                'role_name' => '服务机构',
+                'role_name' => '企业',
             ],
             [
                 'role_id'   => 3,
-                'role_name' => '专家',
+                'role_name' => '保险机构',
             ],
             [
                 'role_id'   => 4,
-                'role_name' => '企业',
+                'role_name' => '服务',
+            ],
+            [
+                'role_id'   => 5,
+                'role_name' => '政府',
+            ], [
+                'role_id'   => 6,
+                'role_name' => '专家',
             ],
         ];
 
