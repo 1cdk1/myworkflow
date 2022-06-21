@@ -62,7 +62,7 @@ class BaseClient
                     'condition'        => '',
                     'jump_process_id'  => 0,
                     'next_process_ids' => 3,                 #下一步骤IDS
-                    'role_ids'         => '1,6',                 #审核角色IDS
+                    'role_ids'         => '1,4',                 #审核角色IDS
                     'can_back'         => 0,                 #是否可驳回 0否 1是
                     'sign_type'        => 0,                 #签名模式 0或签 1会签 
                     'status_id'        => 2,                 #对应状态ID
@@ -75,7 +75,7 @@ class BaseClient
                     'condition'        => '{"no_need_rectify":true}',
                     'jump_process_id'  => 6,
                     'next_process_ids' => 4,                 #下一步骤IDS
-                    'role_ids'         => '1,6',                 #审核角色IDS
+                    'role_ids'         => '1,4',                 #审核角色IDS
                     'can_back'         => 0,                 #是否可驳回 0否 1是
                     'sign_type'        => 0,                 #签名模式 0或签 1会签 
                     'status_id'        => 3,                 #对应状态ID
@@ -88,7 +88,7 @@ class BaseClient
                     'condition'        => '{"no_need_rectify":true}',
                     'jump_process_id'  => 6,
                     'next_process_ids' => 5,                 #下一步骤IDS
-                    'role_ids'         => '1,2,6',                 #审核角色IDS
+                    'role_ids'         => '1,2,4',                 #审核角色IDS
                     'can_back'         => 0,                 #是否可驳回 0否 1是
                     'sign_type'        => 0,                 #签名模式 0或签 1会签
                     'status_id'        => 4,                 #对应状态ID
@@ -101,7 +101,7 @@ class BaseClient
                     'condition'        => '{"no_need_rectify":true}',
                     'jump_process_id'  => 6,
                     'next_process_ids' => 6,                 #下一步骤IDS
-                    'role_ids'         => '1,6',                 #审核角色IDS
+                    'role_ids'         => '1,4',                 #审核角色IDS
                     'can_back'         => 1,                 #是否可驳回 0否 1是
                     'sign_type'        => 0,                 #签名模式 0或签 1会签
                     'status_id'        => 5,                 #对应状态ID
@@ -156,9 +156,6 @@ class BaseClient
             [
                 'role_id'   => 5,
                 'role_name' => '政府',
-            ], [
-                'role_id'   => 6,
-                'role_name' => '专家',
             ],
         ];
 
