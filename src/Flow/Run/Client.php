@@ -378,9 +378,6 @@ class Client extends BaseClient
             $flowIds = explode(',', $flowIds);
             $runData = $this->db->name(TableName::RUN)
                 ->whereIn('flow_id', $flowIds)
-                ->where([
-                    'status' => FlowCons::RUNNING_STATUS
-                ])
                 ->column('now_process_ids', 'flow_id');
             $process = $this->db->name(TableName::PROCESS)->alias('p')
                 ->join(TableName::STATUS, TableName::STATUS . '.status_id=p.status_id')
