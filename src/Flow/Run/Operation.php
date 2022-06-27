@@ -435,7 +435,7 @@ class Operation
         #通过个数
         $pass = 0;
         array_map(function ($v, $k) use ($now, &$pass) {
-            if ($v == $now[$k]) {
+            if (isset($now[$k]) && $v == $now[$k]) {
                 $pass++;
             }
         }, $role, array_keys($role));
