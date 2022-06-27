@@ -246,11 +246,10 @@ class Operation
                                 ]);
                         } else {
                             #结束步骤
-                            $endProcessId = $db->name(TableName::RUN_PROCESS)
+                            $endProcessId = $db->name(TableName::PROCESS)
                                 ->where([
-                                    'run_id'  => $runData['run_id'],
                                     'flow_id' => $flowId,
-                                    'status'  => FlowCons::END_PROCESS
+                                    'process_type'  => FlowCons::END_PROCESS
                                 ])
                                 ->value('process_id');
                             #变更运行表为已结束
