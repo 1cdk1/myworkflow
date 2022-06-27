@@ -30,7 +30,10 @@ class Operation
         if ($db instanceof ConnectionInterface) {
             try {
                 #运行信息
-                $runData = $db->name(TableName::RUN)->where('flow_id', $flowId)->find();
+                $runData = $db->name(TableName::RUN)
+                    ->where('flow_id', $flowId)
+                    ->where('status',FlowCons::RUNNING_STATUS)
+                    ->find();
                 if (empty($runData)) {
                     throw new Exception('未找到该运行中的流水线');
                 }
