@@ -313,9 +313,7 @@ class Client extends BaseClient
     public function getRoleCanOperate($flowIds, $roleId)
     {
         try {
-            if (!is_numeric($flowIds)) {
-                $flowIds = explode(',', $flowIds);
-            }
+            $flowIds = explode(',', $flowIds);
             $runData = $this->db->name(TableName::RUN)
                 ->whereIn('flow_id', $flowIds)
                 ->where([
@@ -377,9 +375,7 @@ class Client extends BaseClient
     public function getFlowNowStatus($flowIds)
     {
         try {
-            if (!is_numeric($flowIds)) {
-                $flowIds = explode(',', $flowIds);
-            }
+            $flowIds = explode(',', $flowIds);
             $runData = $this->db->name(TableName::RUN)
                 ->whereIn('flow_id', $flowIds)
                 ->where([
