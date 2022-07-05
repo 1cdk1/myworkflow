@@ -176,7 +176,7 @@ class Operation
                         ) {
                             #获取下一步骤
                             $nextProcess = $db->name(TableName::PROCESS)
-                                ->whereIn('process_id', $nowProcess['jump_process_id'])
+                                ->where('process_id', $nowProcess['jump_process_id'])
                                 ->select()
                                 ->toArray();
                             if (empty($nextProcess)) {
